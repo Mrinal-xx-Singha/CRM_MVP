@@ -24,6 +24,7 @@ import Link from "next/link";
 import { Search, Download } from "lucide-react";
 import { Input } from "../ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
 
 interface Customer {
   id: number;
@@ -48,11 +49,12 @@ export function CustomerTable() {
     mutationFn: (id: number) => customerApi.deleteCustomer(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
+      toast.success("Customer deleted")
       setEditingCustomer(null);
     },
     onError: (error: any) => {
       console.error("Failed to delete customer:", error);
-      alert(error.response?.data?.message || "Failed to delete customer.");
+      toast.error(error.response?.data?.message || "Failed to delete customer.");
     },
   });
 

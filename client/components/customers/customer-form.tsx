@@ -10,6 +10,7 @@ import { customerApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -51,6 +52,7 @@ export function CustomerForm({ onSuccessCallback, initialData }: CustomerFormPro
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       if (!isEditing) form.reset();
       if (onSuccessCallback) onSuccessCallback();
+      toast.success("Customer created!")
     },
     onError: (error: any) => {
       console.error("Failed to save customer:", error);
@@ -71,7 +73,7 @@ export function CustomerForm({ onSuccessCallback, initialData }: CustomerFormPro
           {form.formState.errors.root.message}
         </p>
       )}
- 
+
       <div className="grid gap-2">
         <Label htmlFor="name">Name *</Label>
         <Input id="name" placeholder="John Doe" {...form.register("name")} />

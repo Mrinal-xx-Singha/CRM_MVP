@@ -7,6 +7,7 @@ import { Trash2, Bell, Calendar, User, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
 
 export function ReminderList() {
   const queryClient = useQueryClient();
@@ -22,6 +23,7 @@ export function ReminderList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reminders"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] }); // update dashboard widget too
+      toast.success('Reminder completed! 🎯')
     },
   });
 
@@ -30,6 +32,7 @@ export function ReminderList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reminders"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success('reminder deleted')
     },
   });
 
@@ -37,7 +40,7 @@ export function ReminderList() {
   if (isError) return <div className="p-8 text-center text-red-500">Failed to load reminders.</div>;
 
   const reminders = data?.reminders || [];
-  
+
   if (reminders.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-muted-foreground border rounded-xl border-dashed">
@@ -54,22 +57,21 @@ export function ReminderList() {
         const isOverdue = !isCompleted && new Date(reminder.remind_at) < new Date();
 
         return (
-          <div 
-            key={reminder.id} 
-            className={`flex items-start justify-between p-4 border rounded-xl shadow-sm transition-all ${
-              isCompleted ? "bg-muted/50 opacity-60" : "bg-card"
-            } ${isOverdue ? "border-red-200 bg-red-50/30" : "border-border"}`}
+          <div
+            key={reminder.id}
+            className={`flex items-start justify-between p-4 border rounded-xl shadow-sm transition-all ${isCompleted ? "bg-muted/50 opacity-60" : "bg-card"
+              } ${isOverdue ? "border-red-200 bg-red-50/30" : "border-border"}`}
           >
             <div className="flex gap-4">
               <div className="mt-1">
-                <Checkbox 
-                  checked={isCompleted} 
+                <Checkbox
+                  checked={isCompleted}
                   onCheckedChange={(checked) => {
-                    updateMutation.mutate({ 
-                      id: reminder.id, 
-                      status: checked ? "sent" : "pending" 
+                    updateMutation.mutate({
+                      id: reminder.id,
+                      status: checked ? "sent" : "pending"
                     });
-                  }} 
+                  }}
                 />
               </div>
               <div className="flex flex-col gap-1">
@@ -79,7 +81,7 @@ export function ReminderList() {
                 {reminder.notes && (
                   <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">{reminder.notes}</p>
                 )}
-                
+
                 <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-xs font-medium">
                   <div className={`flex items-center gap-1.5 ${isOverdue ? "text-red-600" : "text-muted-foreground"}`}>
                     <Calendar className="h-3.5 w-3.5" />
@@ -104,9 +106,9 @@ export function ReminderList() {
               </div>
             </div>
 
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="text-muted-foreground hover:text-red-600 hover:bg-red-50 shrink-0"
               onClick={() => deleteMutation.mutate(reminder.id)}
             >

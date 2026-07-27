@@ -1,0 +1,19 @@
+name: Render Keep-Alive & Reminder Cron
+
+on:
+  schedule:
+    # Executes every 10 minutes, 24 hours a day, 365 days a year
+    - cron: "*/10 * * * *"
+  # Adds a clickable "Run Workflow" test button in the GitHub UI!
+  workflow_dispatch:
+
+jobs:
+  ping-server:
+    name: Execute Reminders & Keep Render Awake
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Auth Ping to Live API
+        run: |
+          curl -f -i -X POST "${{ secrets.RENDER_BACKEND_URL }}/api/cron/reminders" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+          -H "Content-Type: application/json"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth";
@@ -9,6 +9,8 @@ import { SidebarNav } from "./sidebar";
 import Image from "next/image";
 import crmLogo from "../../public/crm-logo.png";
 import { useTheme } from "next-themes";
+import { Search } from "lucide-react"
+import { CommandMenu } from "./command-menu"
 
 export function Header() {
   const router = useRouter();
@@ -16,6 +18,20 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const { theme, setTheme } = useTheme()
+  const [isCommandOpen, setIsCommandOpen] = useState(false)
+
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        setIsCommandOpen((open) => !open)
+      }
+    }
+    document.addEventListener("keydown", down)
+    return () => document.removeEventListener("keydown", down)
+
+  }, [])
 
   const handleLogout = () => {
     logout();
@@ -42,6 +58,18 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-4">
+          <Button
+            className="text-muted-foreground text-xs flex items-center gap-2 px-3 py-1.5 h-9 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-all"
+            onClick={() => setIsCommandOpen(true)}
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span
+              className="hidden sm:inline"
+            >Search CRM...</span>
+            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 ml-1">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -95,6 +123,7 @@ export function Header() {
           </div>
         </div>
       )}
+      <CommandMenu open={isCommandOpen} onOpenChange={setIsCommandOpen} />
     </>
   );
 }

@@ -64,11 +64,17 @@ export const sendReminderEmail = async (toEmail: string, title: string, notes: s
     }
     // Initialize Nodemailer Transporter
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
+      host:"smtp.gmail.com",
+      port:587,
+      secure:false,
+      requireTLS:true,
         auth: {
             user: process.env.SMTP_EMAIL,
             pass: process.env.SMTP_PASSWORD,
         },
+        tls:{
+          rejectUnauthorized:false
+        }
     })
     // Transmit HTML payload
     await transporter.sendMail({

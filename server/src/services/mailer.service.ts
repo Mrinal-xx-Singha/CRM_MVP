@@ -50,38 +50,38 @@ const generateReminderHTML = (title: string, notes?: string) => {
 
 
 
-
 export const sendReminderEmail = async (toEmail: string, title: string, notes: string) => {
     
-    if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+    // 1. Development/Fallback Guard
+    if (!process.env.RESEND_API_KEY) {
         console.log("---------------------------------------------------------");
-        console.log(`📨 [EMAIL MOCK INTERCEPTION] (SMTP not configured)`);
+        console.log(`📨 [EMAIL MOCK] (Resend API Key not configured)`);
         console.log(`To:      ${toEmail}`);
         console.log(`Subject: ${title}`);
-        console.log(`Notes:   ${notes}`);
         console.log("---------------------------------------------------------");
-        return
+        return;
     }
-    // Initialize Nodemailer Transporter
-    const transporter = nodemailer.createTransport({
-      host:"smtp.gmail.com",
-      port:587,
-      secure:false,
-      requireTLS:true,
-        auth: {
-            user: process.env.SMTP_EMAIL,
-            pass: process.env.SMTP_PASSWORD,
+
+    // 2. Transmit HTML payload over HTTPS (Port 443) which Render allows!
+    const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+            "Content-Type": "application/json"
         },
-        tls:{
-          rejectUnauthorized:false
-        }
-    })
-    // Transmit HTML payload
-    await transporter.sendMail({
-       from:`"FlowCRM Bot" <${process.env.SMTP_EMAIL}>`,
-       to:toEmail,
-       subject:`[Reminder] ${title}`,
-       text: notes || title,
-       html:generateReminderHTML(title,notes)
+        body: JSON.stringify({
+            // Resend provides this free testing email address for development!
+            from: "FlowCRM <onboarding@resend.dev>",
+            to: toEmail,
+            subject: `[Reminder] ${title}`,
+            text: notes || title,
+            html: generateReminderHTML(title, notes)
+        })
     });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Resend API Error:", errorData);
+        throw new Error("Failed to dispatch email via Resend");
+    }
 }

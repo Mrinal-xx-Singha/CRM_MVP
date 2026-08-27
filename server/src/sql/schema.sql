@@ -94,3 +94,6 @@ CREATE INDEX idx_reminders_customer_id ON reminders(customer_id);
 CREATE INDEX idx_reminders_job_id ON reminders(job_id);
 CREATE INDEX idx_reminders_remind_at ON reminders(remind_at);
 CREATE INDEX idx_reminders_status ON reminders(status);
+
+
+ALTER TABLE jobs ADD COLUMN deal_value INTEGER DEFAULT 0;

@@ -7,7 +7,7 @@ export const createJob = async (req: Request, res: Response) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const { customer_id, title, description, status, due_date } = req.body;
+    const { customer_id, title, description, status, due_date, deal_value } = req.body;
 
     // Check if customer exists and belongs to this user
     const customerResult = await pool.query(
@@ -18,8 +18,8 @@ export const createJob = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    const jobQuery = "INSERT INTO jobs (user_id,customer_id,title,description,status,due_date) VALUES($1,$2,$3,$4,$5,$6) RETURNING *";
-    const jobValues = [userId, customer_id, title, description || null, status, due_date || null];
+    const jobQuery = "INSERT INTO jobs (user_id,customer_id,title,description,status,due_date,deal_value) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *";
+    const jobValues = [userId, customer_id, title, description || null, status, due_date || null, deal_value || 0];
     const jobResult = await pool.query(jobQuery, jobValues);
 
     return res.status(201).json({ message: "Job created", job: jobResult.rows[0] });
@@ -37,7 +37,7 @@ export const getJobs = async (req: Request, res: Response) => {
     const { status, search } = req.query;
 
     let jobQuery = `
-      SELECT jobs.id, jobs.customer_id, jobs.title, jobs.description,jobs.status,jobs.due_date,jobs.created_at,jobs.updated_at,customers.name AS customer_name 
+      SELECT jobs.id, jobs.customer_id, jobs.title, jobs.description, jobs.status, jobs.due_date, jobs.deal_value, jobs.created_at, jobs.updated_at, customers.name AS customer_name 
       FROM jobs JOIN customers ON jobs.customer_id = customers.id WHERE jobs.user_id = $1 
     `;
     const jobValues: unknown[] = [userId];
@@ -67,7 +67,7 @@ export const getJob = async (req: Request, res: Response) => {
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     const jobQuery = `
-      SELECT jobs.id, jobs.customer_id, jobs.title, jobs.description, jobs.status, jobs.due_date, jobs.created_at, jobs.updated_at, customers.name AS customer_name 
+      SELECT jobs.id, jobs.customer_id, jobs.title, jobs.description, jobs.status, jobs.due_date, jobs.deal_value, jobs.created_at, jobs.updated_at, customers.name AS customer_name 
       FROM jobs JOIN customers ON jobs.customer_id = customers.id WHERE jobs.id = $1 AND jobs.user_id = $2
     `;
     const result = await pool.query(jobQuery, [jobId, userId]);
@@ -85,7 +85,7 @@ export const updateJob = async (req: Request, res: Response) => {
     const jobId = Number(req.params.id);
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const { title, description, status, due_date } = req.body;
+    const { title, description, status, due_date, deal_value } = req.body;
 
     const updates: string[] = [];
     const values: unknown[] = [];
@@ -94,6 +94,7 @@ export const updateJob = async (req: Request, res: Response) => {
     if (description !== undefined) { updates.push(`description=$${values.length + 1}`); values.push(description || null); }
     if (status !== undefined) { updates.push(`status=$${values.length + 1}`); values.push(status); }
     if (due_date !== undefined) { updates.push(`due_date=$${values.length + 1}`); values.push(due_date); }
+    if (deal_value !== undefined) { updates.push(`deal_value=$${values.length + 1}`); values.push(deal_value); }
 
     if (updates.length === 0) return res.status(400).json({ message: "No valid field provided" });
 

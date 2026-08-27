@@ -21,6 +21,7 @@ export interface Job {
   status: "pending" | "in_progress" | "completed";
   due_date?: string;
   customer_name?: string;
+  deal_value?: number;
 }
 
 interface JobCardProps {
@@ -54,6 +55,14 @@ export function JobCard({ job, index }: JobCardProps) {
       deleteMutaion.mutate(id)
     }
   }
+  
+  // Format the Indian Rupee value
+  const formattedValue = job.deal_value ? new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0
+  }).format(job.deal_value) : null;
+
   return (
     <Draggable draggableId={job.id.toString()} index={index}>
       {(provided, snapshot) => (
@@ -66,7 +75,7 @@ export function JobCard({ job, index }: JobCardProps) {
         >
           <div className="flex justify-between items-start gap-2">
             <Link href={`/jobs/${job.id}`} className="hover:underline hover:text-blue-600">
-            <h4 className="font-medium leading-none text-foreground">{job.title}</h4>
+              <h4 className="font-medium leading-none text-foreground">{job.title}</h4>
             </Link>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
@@ -96,6 +105,14 @@ export function JobCard({ job, index }: JobCardProps) {
 
           {job.description && (
             <p className="line-clamp-2 text-xs text-muted-foreground">{job.description}</p>
+          )}
+
+          {formattedValue && (
+            <div className="mt-1">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                {formattedValue}
+              </span>
+            </div>
           )}
 
           <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">

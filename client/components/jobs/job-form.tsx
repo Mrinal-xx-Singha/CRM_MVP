@@ -15,6 +15,7 @@ const formSchema = z.object({
   customer_id: z.string().min(1, "Customer is required"),
   description: z.string().optional().or(z.literal("")),
   due_date: z.string().optional().or(z.literal("")),
+  deal_value: z.number().min(0, "Value cannot be negative").optional(),
   status: z.enum(["pending", "in_progress", "completed"]),
 });
 
@@ -43,12 +44,14 @@ export function JobForm({ onSuccessCallback, jobId, initialData }: JobFormProps)
       customer_id: initialData.customer_id.toString(),
       description: initialData.description || "",
       due_date: initialData.due_date ? initialData.due_date.split("T")[0] : "",
+      deal_value: initialData.deal_value || 0,
       status: initialData.status || "pending",
     } : {
       title: "",
       customer_id: "",
       description: "",
       due_date: "",
+      deal_value: undefined,
       status: "pending" as const,
     },
   });
@@ -123,9 +126,21 @@ export function JobForm({ onSuccessCallback, jobId, initialData }: JobFormProps)
         )}
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="due_date">Due Date</Label>
-        <Input id="due_date" type="date" {...form.register("due_date")} />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="deal_value">Deal Value (₹)</Label>
+          <div className="relative">
+            <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">₹</span>
+            <Input id="deal_value" type="number" className="pl-7" placeholder="50000" {...form.register("deal_value", { valueAsNumber: true })} />
+          </div>
+          {form.formState.errors.deal_value && (
+            <p className="text-xs text-destructive">{form.formState.errors.deal_value.message}</p>
+          )}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="due_date">Due Date</Label>
+          <Input id="due_date" type="date" {...form.register("due_date")} />
+        </div>
       </div>
 
       <div className="grid gap-2">

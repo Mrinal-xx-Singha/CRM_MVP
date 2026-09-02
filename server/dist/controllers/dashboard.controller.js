@@ -10,7 +10,7 @@ const dashboardSummaryHandler = async (req, res) => {
         });
     }
     try {
-        const [customersResult, totalJobsResult, pendingJobsResult, inProgressJobsResult, completedJobsResult, pendingRemindersResult, overdueRemindersResult,] = await Promise.all([
+        const [customersResult, totalJobsResult, pendingJobsResult, inProgressJobsResult, completedJobsResult, pendingRemindersResult, overdueRemindersResult, productivityDataResult] = await Promise.all([
             dbConnect_1.pool.query(`
         SELECT COUNT(*) AS total_customers
         FROM customers
@@ -52,6 +52,16 @@ const dashboardSummaryHandler = async (req, res) => {
         AND status = 'pending'
         AND remind_at < NOW()
         `, [userId]),
+            dbConnect_1.pool.query(`SELECT 
+          TO_CHAR(DATE_TRUNC('month', created_at), 'Mon') as month,
+          COUNT(*) as jobs_completed
+        FROM jobs
+        WHERE user_id = $1 
+          AND status = 'completed'
+          AND created_at >= DATE_TRUNC('month', NOW()) - INTERVAL '5 months'
+        GROUP BY DATE_TRUNC('month', created_at)
+        ORDER BY DATE_TRUNC('month', created_at) ASC   
+        `, [userId])
         ]);
         return res.status(200).json({
             total_customers: Number(customersResult.rows[0].total_customers),
@@ -61,6 +71,10 @@ const dashboardSummaryHandler = async (req, res) => {
             completed_jobs: Number(completedJobsResult.rows[0].completed_jobs),
             pending_reminders: Number(pendingRemindersResult.rows[0].pending_reminders),
             overdue_reminders: Number(overdueRemindersResult.rows[0].overdue_reminders),
+            productivity_data: productivityDataResult.rows.map(row => ({
+                month: row.month,
+                jobs_completed: Number(row.jobs_completed)
+            }))
         });
     }
     catch (error) {

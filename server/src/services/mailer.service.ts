@@ -72,7 +72,8 @@ export const sendReminderEmail = async (toEmail: string, title: string, notes: s
         body: JSON.stringify({
             // Resend provides this free testing email address for development!
             from: "FlowCRM <onboarding@resend.dev>",
-            to: toEmail,
+            // Override 'to' in development because Resend free tier blocks sending to unverified addresses
+            to: process.env.SMTP_EMAIL || toEmail,
             subject: `[Reminder] ${title}`,
             text: notes || title,
             html: generateReminderHTML(title, notes)

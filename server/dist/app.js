@@ -17,7 +17,12 @@ const user_route_1 = __importDefault(require("./routes/user.route"));
 const cron_route_1 = __importDefault(require("./routes/cron.route"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const app = (0, express_1.default)();
-app.use((0, cors_1.default)());
+app.set("trust proxy", 1); // Required for Render and rate limiting
+app.use((0, cors_1.default)({
+    origin: process.env.FRONTEND_URL || "*",
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express_1.default.json());
 const globalLimiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000, // 15 minutes

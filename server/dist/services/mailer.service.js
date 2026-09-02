@@ -1,23 +1,83 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendReminderEmail = void 0;
-const nodemailer_1 = __importDefault(require("nodemailer"));
-const transporter = nodemailer_1.default.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_PASSWORD,
-    },
-});
+// Helper function to generate high contrast, professional TML email layout
+const generateReminderHTML = (title, notes) => {
+    return `
+  <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>FlowCRM Notification</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 40px 16px; color: #18181b;">
+        <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+          <!-- Header Banner -->
+          <div style="background-color: #18181b; padding: 24px 32px; text-align: left;">
+            <h1 style="color: #ffffff; font-size: 20px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">⚡ FlowCRM Alert</h1>
+          </div>
+          
+          <!-- Body Content -->
+          <div style="padding: 32px;">
+            <div style="display: inline-block; background-color: #ecfdf5; color: #047857; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;">
+              Scheduled Reminder Due
+            </div>
+            <h2 style="font-size: 22px; font-weight: 700; margin: 0 0 12px 0; color: #09090b;">
+              ${title}
+            </h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #52525b; margin: 0 0 24px 0; background-color: #fafafa; padding: 16px; border-radius: 8px; border: 1px solid #f4f4f5;">
+              ${notes || "<i>No additional notes provided for this task.</i>"}
+            </p>
+            
+            <!-- CTA Button -->
+            <div style="margin-top: 28px;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/reminders" style="background-color: #18181b; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 600; display: inline-block;">
+                View in Dashboard →
+              </a>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background-color: #fafafa; padding: 20px 32px; border-top: 1px solid #e4e4e7; text-align: center; font-size: 12px; color: #71717a;">
+            Sent automatically by FlowCRM — Built for Small Business Simplicity.
+          </div>
+        </div>
+      </body>
+    </html>
+    `;
+};
 const sendReminderEmail = async (toEmail, title, notes) => {
-    await transporter.sendMail({
-        from: process.env.SMTP_EMAIL,
-        to: toEmail,
-        subject: title,
-        text: notes
+    // 1. Development/Fallback Guard
+    if (!process.env.RESEND_API_KEY) {
+        console.log("---------------------------------------------------------");
+        console.log(`📨 [EMAIL MOCK] (Resend API Key not configured)`);
+        console.log(`To:      ${toEmail}`);
+        console.log(`Subject: ${title}`);
+        console.log("---------------------------------------------------------");
+        return;
+    }
+    // 2. Transmit HTML payload over HTTPS (Port 443) which Render allows!
+    const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            // Resend provides this free testing email address for development!
+            from: "FlowCRM <onboarding@resend.dev>",
+            // Override 'to' in development because Resend free tier blocks sending to unverified addresses
+            to: process.env.SMTP_EMAIL || toEmail,
+            subject: `[Reminder] ${title}`,
+            text: notes || title,
+            html: generateReminderHTML(title, notes)
+        })
     });
+    if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Resend API Error:", errorData);
+        throw new Error("Failed to dispatch email via Resend");
+    }
 };
 exports.sendReminderEmail = sendReminderEmail;

@@ -1,0 +1,64 @@
+import request from "supertest";
+import app from "../app"; 
+import { pool } from "../db/dbConnect";
+import bcrypt from "bcrypt";
+
+describe("Jobs API Endpoints", () => {
+  let authToken: string;
+
+  // Runs ONCE before these specific tests
+  beforeAll(async () => {
+    // 1. Create a dummy user in the clean database
+    const hashedPassword = await bcrypt.hash("password123", 10);
+    const userRes = await pool.query(
+      "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id",
+      ["Test User", "testuser@flowcrm.com", hashedPassword]
+    );
+    const userId = userRes.rows[0].id;
+
+    // 2. Login to get a JWT token so we can access protected routes
+    const loginRes = await request(app).post("/auth/login").send({
+      email: "testuser@flowcrm.com",
+      password: "password123",
+    });
+    authToken = loginRes.body.token;
+
+    // 3. Create a dummy customer to attach jobs to
+    await pool.query(
+      "INSERT INTO customers (id, user_id, name, email) VALUES ($1, $2, $3, $4)",
+      [99, userId, "Test Corp", "contact@testcorp.com"]
+    );
+  });
+
+  // ---  TESTS  --- //
+
+  it("should create a new job successfully", async () => {
+    const res = await request(app)
+      .post("/api/jobs")
+      .set("Authorization", `Bearer ${authToken}`) // Pass the JWT token
+      .send({
+        customer_id: 99,
+        title: "Build Website",
+        deal_value: 50000,
+        status: "pending",
+      });
+
+    // Assert the response status and body
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("job");
+    expect(res.body.job.title).toBe("Build Website");
+    expect(res.body.job.deal_value).toBe(50000);
+  });
+
+  it("should block unauthenticated requests", async () => {
+    const res = await request(app)
+      .post("/api/jobs")
+      // Notice we are NOT setting the Authorization header here
+      .send({
+        customer_id: 99,
+        title: "Hacked Job",
+      });
+
+    expect(res.status).toBe(401);
+  });
+});

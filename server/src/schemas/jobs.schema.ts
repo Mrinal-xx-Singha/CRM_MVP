@@ -25,6 +25,7 @@ export const createJobSchema = z.object({
         due_date: z.string().refine((date) => !Number.isNaN(Date.parse(date)), {
             message: "Invalid date format",
         }).optional(),
+        deal_value: z.number().min(0).optional(),
 
 
     })
@@ -41,5 +42,6 @@ export const updateJobSchema = z.object({
         due_date: z.string().refine((date) => !Number.isNaN(Date.parse(date)), {
             message: "Invalid date format",
         }).optional(),
+        deal_value: z.number().min(0).optional(),
     })
 })
